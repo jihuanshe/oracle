@@ -19,79 +19,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-notifier:
-    name: Build notarized macOS notifier
-    runs-on: macos-latest
-    timeout-minutes: 20
-    steps:
-      - name: Resolve release tag
-        id: release
-        shell: bash
-        run: |
-          set -euo pipefail
-          tag="${{ inputs.tag || github.ref_name }}"
-          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
-            echo "Release tag must look like v1.2.3 or v1.2.3-beta.1; got '$tag'." >&2
-            exit 1
-          fi
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-
-      - name: Check out release tag
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ steps.release.outputs.tag }}
-
-      - name: Import signing certificate
-        env:
-          MACOS_CODESIGN_CERTIFICATE_BASE64: ${{ secrets.MACOS_CODESIGN_CERTIFICATE_BASE64 }}
-          MACOS_CODESIGN_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CODESIGN_CERTIFICATE_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.MACOS_CODESIGN_KEYCHAIN_PASSWORD }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$MACOS_CODESIGN_CERTIFICATE_BASE64"
-          test -n "$MACOS_CODESIGN_CERTIFICATE_PASSWORD"
-          keychain_password="${KEYCHAIN_PASSWORD:-$(uuidgen)}"
-          certificate_path="$RUNNER_TEMP/developer-id.p12"
-          keychain_path="$RUNNER_TEMP/oracle-signing.keychain-db"
-          printf '%s' "$MACOS_CODESIGN_CERTIFICATE_BASE64" | base64 --decode > "$certificate_path"
-          security create-keychain -p "$keychain_password" "$keychain_path"
-          security set-keychain-settings -lut 21600 "$keychain_path"
-          security unlock-keychain -p "$keychain_password" "$keychain_path"
-          security import "$certificate_path" -P "$MACOS_CODESIGN_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$keychain_path"
-          security list-keychains -d user -s "$keychain_path"
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain_path"
-
-      - name: Build notifier app
-        env:
-          CODESIGN_ID: ${{ secrets.CODESIGN_ID }}
-          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
-          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$CODESIGN_ID"
-          test -n "$APP_STORE_CONNECT_API_KEY_P8"
-          test -n "$APP_STORE_CONNECT_KEY_ID"
-          test -n "$APP_STORE_CONNECT_ISSUER_ID"
-          vendor/oracle-notifier/build-notifier.sh
-
-      - name: Archive notifier app
-        shell: bash
-        run: tar -C vendor/oracle-notifier -czf "$RUNNER_TEMP/oracle-notifier-app.tar.gz" OracleNotifier.app
-
-      - name: Upload notifier app
-        uses: actions/upload-artifact@v6
-        with:
-          name: oracle-notifier-app
-          path: ${{ runner.temp }}/oracle-notifier-app.tar.gz
-          if-no-files-found: error
-
   package:
     name: Build package artifact
-    needs: build-notifier
-    runs-on: hetzner-hel1-ex63
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Resolve release tag
@@ -136,16 +66,6 @@ jobs:
 
       - name: Install dependencies
         run: mise run install
-
-      - name: Download notifier app
-        uses: actions/download-artifact@v6
-        with:
-          name: oracle-notifier-app
-          path: ${{ runner.temp }}
-
-      - name: Restore notifier app
-        shell: bash
-        run: tar -C vendor/oracle-notifier -xzf "$RUNNER_TEMP/oracle-notifier-app.tar.gz"
 
       - name: Run release gates
         run: |
