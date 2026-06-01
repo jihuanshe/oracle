@@ -2,14 +2,14 @@
 
 > For a guarded, phased flow, run `./scripts/release.sh <phase>` (gates | artifacts | publish | smoke | tag | all); it stops on the first error so you can resume after fixing issues.
 
-The `Release package` GitHub Action builds the npm tarball from a `vX.Y.Z` tag, uploads `oracle-X.Y.Z.tgz` plus SHA1/SHA256 checksums to the GitHub Release, and keeps `dist/` out of git. Use it for release artifacts instead of committing built output or relying on npm's Git dependency preparation path. Development and CI tool versions are pinned in `.mise.toml`; run `mise install` before local release checks.
+The `Release package` GitHub Action builds the signed macOS notifier app, builds the npm tarball from a `vX.Y.Z` tag, uploads `oracle-X.Y.Z.tgz` plus SHA1/SHA256 checksums to the GitHub Release, and keeps `dist/` out of git. Use it for release artifacts instead of committing built output or relying on npm's Git dependency preparation path. Development and CI tool versions are pinned in `.mise.toml`; run `mise install` before local release checks.
 
 1. **Version & metadata**
    - [ ] Update `package.json` version (e.g., `1.0.0`).
    - [ ] Update any mirrored version strings (CLI banner/help, docs metadata) to match.
    - [ ] Confirm package metadata (name, description, repository, keywords, license, `files`/`.npmignore`).
    - [ ] If dependencies changed, run `mise run install` so `pnpm-lock.yaml` is current.
-   - [ ] Source `~/.profile` so codesign/notary env vars are available before building the notifier.
+   - [ ] Confirm GitHub Actions has `MACOS_CODESIGN_CERTIFICATE_BASE64`, `MACOS_CODESIGN_CERTIFICATE_PASSWORD`, `CODESIGN_ID`, `APP_STORE_CONNECT_API_KEY_P8`, `APP_STORE_CONNECT_KEY_ID`, and `APP_STORE_CONNECT_ISSUER_ID` secrets for the notifier build.
 2. **Artifacts**
    - [ ] Run `mise run build` (ensure `dist/` is current).
    - [ ] Verify `bin` mapping in `package.json` points to `dist/bin/oracle-cli.js`.
