@@ -21,7 +21,7 @@ concurrency:
 jobs:
   package:
     name: Build package artifact
-    runs-on: ubuntu-latest
+    runs-on: hetzner-hel1-ex63
     timeout-minutes: 15
     steps:
       - name: Resolve release tag
