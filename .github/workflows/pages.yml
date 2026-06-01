@@ -1,14 +1,6 @@
 name: pages
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "docs/**"
-      - "scripts/build-docs-site.mjs"
-      - "scripts/docs-site-assets.mjs"
-      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
