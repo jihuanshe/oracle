@@ -11,7 +11,7 @@ install Node with mise and install the release tarball with npm:
 ```bash
 curl https://mise.run | sh
 mise use -g node@24
-mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/v0.13.0/oracle-0.13.0.tgz
+mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/v0.13.1/oracle-0.13.1.tgz
 ```
 
 Requires Node **24 or newer**. After install:
@@ -63,7 +63,13 @@ Override the root with `ORACLE_HOME_DIR=/some/path` if you'd rather keep state u
 ## Updating
 
 ```bash
-mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/v0.13.0/oracle-0.13.0.tgz
+mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/v0.13.1/oracle-0.13.1.tgz
+```
+
+## Uninstalling
+
+```bash
+mise exec -- npm uninstall -g @jihuanshe/oracle
 ```
 
 `oracle --version` reports the current build. Fork releases land on [GitHub Releases](https://github.com/jihuanshe/oracle/releases).

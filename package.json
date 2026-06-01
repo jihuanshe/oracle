@@ -1,17 +1,17 @@
 {
-  "name": "@steipete/oracle",
-  "version": "0.13.0",
+  "name": "@jihuanshe/oracle",
+  "version": "0.13.1",
   "description": "CLI wrapper around OpenAI Responses API with GPT-5.5 Pro, GPT-5.5, GPT-5.4, GPT-5.2, GPT-5.1, and GPT-5.1 Codex high reasoning modes.",
   "keywords": [],
   "homepage": "https://askoracle.sh",
   "bugs": {
-    "url": "https://github.com/steipete/oracle/issues"
+    "url": "https://github.com/jihuanshe/oracle/issues"
   },
   "license": "MIT",
   "author": "",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/steipete/oracle.git"
+    "url": "git+https://github.com/jihuanshe/oracle.git"
   },
   "bin": {
     "oracle": "dist/bin/oracle-cli.js",

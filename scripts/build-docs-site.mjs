@@ -19,7 +19,7 @@ const productTagline = "Whisper your prompt to a mythical pro agent";
 const productDescription =
   "Oracle bundles your prompt and files so a Pro AI — GPT-5.5 Pro, Gemini 3 Pro, Claude Opus, and friends — can answer with real repository context. CLI, MCP, browser, and API in one tool.";
 const brewInstall =
-  "mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/v0.13.0/oracle-0.13.0.tgz";
+  "mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/v0.13.1/oracle-0.13.1.tgz";
 const codeTheme = "github-dark-dimmed";
 const highlighter = await createHighlighter({
   themes: [codeTheme],

@@ -5,9 +5,9 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@steipete/oracle"><img src="https://img.shields.io/npm/v/@steipete/oracle?style=for-the-badge&logo=npm&logoColor=white" alt="npm version"></a>
-  <a href="https://github.com/steipete/oracle/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/steipete/oracle/ci.yml?branch=main&style=for-the-badge&label=tests" alt="CI Status"></a>
-  <a href="https://github.com/steipete/oracle"><img src="https://img.shields.io/badge/platforms-macOS%20%7C%20Linux%20%7C%20Windows-blue?style=for-the-badge" alt="Platforms"></a>
+  <a href="https://github.com/jihuanshe/oracle/releases"><img src="https://img.shields.io/github/v/release/jihuanshe/oracle?style=for-the-badge&logo=github&logoColor=white" alt="GitHub release"></a>
+  <a href="https://github.com/jihuanshe/oracle/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/jihuanshe/oracle/ci.yml?branch=main&style=for-the-badge&label=tests" alt="CI Status"></a>
+  <a href="https://github.com/jihuanshe/oracle"><img src="https://img.shields.io/badge/platforms-macOS%20%7C%20Linux%20%7C%20Windows-blue?style=for-the-badge" alt="Platforms"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="MIT License"></a>
 </p>
 
@@ -53,11 +53,11 @@ Install this fork from its GitHub Release tarball with mise-managed Node/npm:
 ```bash
 curl https://mise.run | sh
 mise use -g node@24
-mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/v0.13.0/oracle-0.13.0.tgz
+mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/v0.13.1/oracle-0.13.1.tgz
 oracle --version
 ```
 
-Requires Node 24+. Or use `npx -y @steipete/oracle …` (or pnpx).
+Requires Node 24+. This fork is distributed through GitHub Release tarballs, not npm.
 
 ## Development
 

@@ -30,7 +30,7 @@ try {
   const cliPath = join(
     installDir,
     "node_modules",
-    "@steipete",
+    "@jihuanshe",
     "oracle",
     "dist",
     "bin",
