@@ -9,7 +9,7 @@ import { css, faviconSvg, js, preThemeScript, themeToggleHtml } from "./docs-sit
 const root = process.cwd();
 const docsDir = path.join(root, "docs");
 const outDir = path.join(root, "dist", "docs-site");
-const repoBase = "https://github.com/steipete/oracle";
+const repoBase = "https://github.com/jihuanshe/oracle";
 const repoEditBase = `${repoBase}/edit/main/docs`;
 const cname = readCname();
 const siteBase = cname ? `https://${cname}` : "";
@@ -18,7 +18,8 @@ const productName = "oracle";
 const productTagline = "Whisper your prompt to a mythical pro agent";
 const productDescription =
   "Oracle bundles your prompt and files so a Pro AI — GPT-5.5 Pro, Gemini 3 Pro, Claude Opus, and friends — can answer with real repository context. CLI, MCP, browser, and API in one tool.";
-const brewInstall = "brew install steipete/tap/oracle";
+const brewInstall =
+  "mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/v0.13.0/oracle-0.13.0.tgz";
 const codeTheme = "github-dark-dimmed";
 const highlighter = await createHighlighter({
   themes: [codeTheme],
@@ -537,7 +538,7 @@ function homeHero(page) {
         <div class="home-cta">
           <a class="btn btn-primary" href="${quickstartRel}">Quickstart</a>
           <a class="btn btn-ghost" href="${repoBase}" rel="noopener">GitHub</a>
-          <div class="home-install" aria-label="Install with Homebrew">
+          <div class="home-install" aria-label="Install from GitHub Release">
             <span class="prompt" aria-hidden="true">$</span>
             <code>${escapeHtml(brewInstall)}</code>
           </div>

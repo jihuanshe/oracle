@@ -6,7 +6,7 @@ description: "Oracle bundles your prompt and files so a mythical pro agent — G
 
 ## Try it
 
-After installing (`brew install steipete/tap/oracle` or `npm i -g @steipete/oracle`), every consult is a one-liner.
+After installing from the GitHub Release tarball, every consult is a one-liner.
 
 ```bash
 # Browser path — no API key, drives ChatGPT directly (default: GPT-5.5 Pro).
@@ -42,7 +42,7 @@ oracle --followup <id> -p "Re-evaluate with this new context" --file "src/**/*.t
 
 ## Pick your path
 
-- **Trying it.** [Install](install.md) → [Quickstart](quickstart.md). Five minutes from `brew install` to your first answer.
+- **Trying it.** [Install](install.md) → [Quickstart](quickstart.md). Five minutes from install to your first answer.
 - **Choosing a model.** The [Mythical Pro Agents](mythical-pro-agents.md) lineup covers when to reach for GPT-5.5 Pro vs. Gemini 3 Pro vs. Claude Opus, and what each costs.
 - **Wiring up an agent.** [Agents](agents.md) covers Claude Code, Codex, Cursor, and the `oracle` skill. [MCP](mcp.md) plugs Oracle into any MCP-aware client.
 - **Driving ChatGPT without keys.** [Browser mode](browser-mode.md) walks through manual-login profiles, attach-running, remote browsers, and Deep Research.
@@ -54,4 +54,4 @@ The frontier models marked "Pro" — GPT-5.5 Pro, Gemini 3 Pro, Claude Opus, Ope
 
 ## Project
 
-Active development under MIT. The [changelog](https://github.com/steipete/oracle/blob/main/CHANGELOG.md) tracks recent releases. Source on [GitHub](https://github.com/steipete/oracle). Not affiliated with OpenAI, Google, or Anthropic.
+Active development under MIT. Source on [GitHub](https://github.com/jihuanshe/oracle). Not affiliated with OpenAI, Google, or Anthropic.

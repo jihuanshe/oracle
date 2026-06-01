@@ -73,7 +73,7 @@
 
     <g font-family="JetBrains Mono, SF Mono, ui-monospace, monospace" font-size="20" fill="#cdc1f0">
       <rect x="78" y="510" width="540" height="64" rx="10" fill="#0c0820" stroke="#2a1d56"/>
-      <text x="100" y="552"><tspan fill="#7c5cd6">$</tspan> brew install steipete/tap/oracle</text>
+      <text x="100" y="552"><tspan fill="#7c5cd6">$</tspan> install from GitHub Releases</text>
     </g>
   </g>
 </svg>

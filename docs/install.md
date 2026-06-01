@@ -1,22 +1,17 @@
 ---
 title: Install
-description: "Install Oracle via Homebrew, npm, or run on demand with npx. Node 24+ required."
+description: "Install this Oracle fork from GitHub Releases with mise-managed Node/npm. Node 24+ required."
 ---
 
-## Homebrew (macOS / Linux)
+## GitHub Release tarball
+
+This fork publishes prebuilt CLI npm tarballs on GitHub Releases. On macOS,
+install Node with mise and install the release tarball with npm:
 
 ```bash
-brew install steipete/tap/oracle
-```
-
-The tap also publishes the `oracle-notifier` macOS helper used by long-running browser runs.
-
-## npm / pnpm
-
-```bash
-npm install -g @steipete/oracle
-# or
-pnpm add -g @steipete/oracle
+curl https://mise.run | sh
+mise use -g node@24
+mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/v0.13.0/oracle-0.13.0.tgz
 ```
 
 Requires Node **24 or newer**. After install:
@@ -26,24 +21,20 @@ oracle --help
 oracle --version
 ```
 
-## Run without installing
+This path installs a prebuilt package artifact. Installing from a Git ref is not
+the supported path because npm prepares Git dependencies in a temporary checkout
+and can miss the pnpm-built `dist/` output.
+
+## Upstream npm package
+
+The upstream package remains available from npm:
 
 ```bash
+npm install -g @steipete/oracle
 npx -y @steipete/oracle --help
-pnpx @steipete/oracle --help
 ```
 
-`npx` is fine for CI, ad-hoc scripts, or when you don't want a global binary on the box. Cache the package in CI by pinning the version (`@steipete/oracle@0.12.1`) so you don't re-download on every job.
-
-## GitHub Release tarball
-
-Each GitHub Release includes the same npm package tarball that Homebrew consumes:
-
-```bash
-npm install -g https://github.com/steipete/oracle/releases/download/v0.13.0/oracle-0.13.0.tgz
-```
-
-For a fork, replace the repository and version in the URL. This path installs a prebuilt package artifact; installing from a Git ref is intentionally not the supported path because npm prepares Git dependencies in a temporary checkout and can miss the pnpm-built `dist/` output.
+Use the GitHub Release tarball above when you want this fork's changes.
 
 ## API keys (optional)
 
@@ -72,8 +63,7 @@ Override the root with `ORACLE_HOME_DIR=/some/path` if you'd rather keep state u
 ## Updating
 
 ```bash
-brew upgrade oracle      # Homebrew
-npm update -g @steipete/oracle
+mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/v0.13.0/oracle-0.13.0.tgz
 ```
 
-`oracle --version` reports the current build. Releases land on [GitHub Releases](https://github.com/steipete/oracle/releases) with notes copied from the [changelog](https://github.com/steipete/oracle/blob/main/CHANGELOG.md).
+`oracle --version` reports the current build. Fork releases land on [GitHub Releases](https://github.com/jihuanshe/oracle/releases).
