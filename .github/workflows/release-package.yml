@@ -12,7 +12,6 @@ on:
         type: string
 
 permissions:
-  actions: write
   contents: write
 
 concurrency:
@@ -219,10 +218,3 @@ jobs:
             "${{ steps.pack.outputs.dir }}/${{ steps.pack.outputs.artifact }}.sha1" \
             "${{ steps.pack.outputs.dir }}/${{ steps.pack.outputs.artifact }}.sha256" \
             --clobber
-
-      - name: Dispatch Homebrew tap update
-        if: ${{ steps.release.outputs.prerelease != 'true' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: gh workflow run update-homebrew-tap.yml -f tag="${{ steps.release.outputs.tag }}"

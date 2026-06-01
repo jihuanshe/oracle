@@ -50,10 +50,10 @@ The `Release package` GitHub Action builds the signed macOS notifier app, builds
    - [ ] If promoting later: `npm dist-tag add @steipete/oracle@X.Y.Z latest --otp <code>` (OTP required).
    - [ ] `npm view @steipete/oracle version` (and optionally `npm view @steipete/oracle time`) to confirm the registry shows the new version.
    - [ ] Verify positional prompt still works: `npx -y @steipete/oracle "Test prompt" --dry-run`.
-6. **Homebrew (tap)**
+6. **Homebrew (tap, upstream only)**
    - [ ] The `Release package` workflow has uploaded `oracle-<version>.tgz` and checksum assets to the GitHub release.
-   - [ ] The `Update Homebrew Tap` workflow dispatches `steipete/homebrew-tap` after the GitHub release is published.
-   - [ ] If needed, run `.github/workflows/update-homebrew-tap.yml` manually with the release tag after assets are live.
+   - [ ] Fork releases stop here unless you intentionally maintain a tap. The `Update Homebrew Tap (upstream only)` workflow is manual and guarded to `steipete/oracle` because it dispatches `steipete/homebrew-tap`.
+   - [ ] In the upstream repository, run `.github/workflows/update-homebrew-tap.yml` manually with the release tag after assets are live.
    - [ ] Confirm the tap workflow updated `Formula/oracle.rb` to the GitHub release asset and committed the SHA256.
    - [ ] Verify install:
      - `brew uninstall oracle || true`

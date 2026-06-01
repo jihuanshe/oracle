@@ -54,11 +54,13 @@ verified, and compatible with packaged installs.
   - `APP_STORE_CONNECT_API_KEY_P8`
   - `APP_STORE_CONNECT_KEY_ID`
   - `APP_STORE_CONNECT_ISSUER_ID`
-- Stable releases dispatch the Homebrew tap update workflow after GitHub Release
-  assets are uploaded. Prerelease tags such as `v1.2.3-beta.1` must be marked as
-  GitHub prereleases and must not update Homebrew stable.
-- npm publish still requires OTP. Prepare/tag/release first, then stop at
-  `Enter OTP:` and ask the user for the code.
+- The Homebrew tap workflow is upstream-only and manual; do not dispatch it from
+  fork release artifacts. Prerelease tags such as `v1.2.3-beta.1` must be marked
+  as GitHub prereleases and must not update Homebrew stable.
+- `scripts/release.sh` is an upstream npm helper. Fork releases should prefer the
+  GitHub Release tarball workflow. npm publish still requires
+  `ORACLE_UPSTREAM_RELEASE=1` and OTP; stop at `Enter OTP:` and ask the user for
+  the code.
 - Beta npm publishing requires a new beta version (for example,
   `0.4.4-beta.1`); npm will not let you overwrite an existing beta tag.
 - Sparkle signing key lives at
