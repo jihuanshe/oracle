@@ -49,13 +49,8 @@ jobs:
         with:
           ref: ${{ steps.release.outputs.tag }}
 
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v6
+      - name: Set up mise
+        uses: jdx/mise-action@v3
 
       - name: Verify package version matches tag
         shell: bash
@@ -68,14 +63,14 @@ jobs:
           fi
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: mise run install
 
       - name: Run release gates
         run: |
-          pnpm run check
-          pnpm run test
-          pnpm run build
-          pnpm run test:packed-cli
+          mise run check
+          mise run test
+          mise run build
+          mise run test-packed-cli
 
       - name: Pack npm tarball
         id: pack
@@ -84,7 +79,7 @@ jobs:
           set -euo pipefail
           outdir="$RUNNER_TEMP/oracle-package"
           mkdir -p "$outdir"
-          pnpm pack --pack-destination "$outdir"
+          mise exec -- pnpm pack --pack-destination "$outdir"
           packed="$(find "$outdir" -maxdepth 1 -name '*.tgz' -print -quit)"
           if [[ -z "$packed" ]]; then
             echo "pnpm pack did not produce a tarball." >&2

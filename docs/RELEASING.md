@@ -2,16 +2,16 @@
 
 > For a guarded, phased flow, run `./scripts/release.sh <phase>` (gates | artifacts | publish | smoke | tag | all); it stops on the first error so you can resume after fixing issues.
 
-The `Release package` GitHub Action builds the npm tarball from a `vX.Y.Z` tag, uploads `oracle-X.Y.Z.tgz` plus SHA1/SHA256 checksums to the GitHub Release, and keeps `dist/` out of git. Use it for release artifacts instead of committing built output or relying on npm's Git dependency preparation path.
+The `Release package` GitHub Action builds the npm tarball from a `vX.Y.Z` tag, uploads `oracle-X.Y.Z.tgz` plus SHA1/SHA256 checksums to the GitHub Release, and keeps `dist/` out of git. Use it for release artifacts instead of committing built output or relying on npm's Git dependency preparation path. Development and CI tool versions are pinned in `.mise.toml`; run `mise install` before local release checks.
 
 1. **Version & metadata**
    - [ ] Update `package.json` version (e.g., `1.0.0`).
    - [ ] Update any mirrored version strings (CLI banner/help, docs metadata) to match.
    - [ ] Confirm package metadata (name, description, repository, keywords, license, `files`/`.npmignore`).
-   - [ ] If dependencies changed, run `pnpm install` so `pnpm-lock.yaml` is current.
+   - [ ] If dependencies changed, run `mise run install` so `pnpm-lock.yaml` is current.
    - [ ] Source `~/.profile` so codesign/notary env vars are available before building the notifier.
 2. **Artifacts**
-   - [ ] Run `pnpm run build` (ensure `dist/` is current).
+   - [ ] Run `mise run build` (ensure `dist/` is current).
    - [ ] Verify `bin` mapping in `package.json` points to `dist/bin/oracle-cli.js`.
 
 - [ ] Produce npm tarball and checksums locally only when you need to inspect them before tagging:
@@ -33,11 +33,11 @@ The `Release package` GitHub Action builds the npm tarball from a `vX.Y.Z` tag, 
 - [ ] **Release notes must exactly match the version’s changelog section** (full Added/Changed/Fixed/Tests bullets, no omissions). After creating the GitHub release, compare the body to `CHANGELOG.md` and fix any mismatch.
 
 4. **Validation**
-   - [ ] `pnpm run check` (zero warnings allowed; fail on any lint/type warnings).
-   - [ ] `pnpm vitest`
-   - [ ] `pnpm run lint`
-   - [ ] Optional live smoke (with real `OPENAI_API_KEY`): `ORACLE_LIVE_TEST=1 pnpm vitest run tests/live/openai-live.test.ts`
-   - [ ] MCP sanity check: with `config/mcporter.json` pointed at the local stdio server (`oracle-local`), run `mcporter list oracle-local --schema --config config/mcporter.json` after building (`pnpm build`) to ensure tools/resources are discoverable.
+   - [ ] `mise run check` (zero warnings allowed; fail on any lint/type warnings).
+   - [ ] `mise run test`
+   - [ ] `mise run lint`
+   - [ ] Optional live smoke (with real `OPENAI_API_KEY`): `mise exec -- env ORACLE_LIVE_TEST=1 pnpm vitest run tests/live/openai-live.test.ts`
+   - [ ] MCP sanity check: with `config/mcporter.json` pointed at the local stdio server (`oracle-local`), run `mcporter list oracle-local --schema --config config/mcporter.json` after building (`mise run build`) to ensure tools/resources are discoverable.
 5. **Publish (npm)**
    - [ ] Ensure git status is clean; commit and push any pending changes.
    - [ ] Avoid repeated browser auth: create a granular access token with **write** + **Bypass 2FA** at npmjs.com/settings/~/tokens, then export it (e.g., `export NPM_TOKEN=...` in `~/.profile`) and set `//registry.npmjs.org/:_authToken=${NPM_TOKEN}` in `~/.npmrc`.
