@@ -41,32 +41,18 @@ verified, and compatible with packaged installs.
 - GitHub release artifacts are built by `.github/workflows/release-package.yml`.
   The workflow builds from a `vX.Y.Z` tag or manual dispatch tag, creates
   `oracle-X.Y.Z.tgz`, and uploads SHA1/SHA256 checksum files.
-- The package job runs on the private `hetzner-hel1-ex63` runner. Keep release
-  commands routed through mise tasks so local and CI toolchains match.
-- The macOS notifier app is built in a macOS job, signed/notarized, archived as
-  an artifact, restored on the private package runner, and included before
-  `pnpm pack`.
-- Release notifier builds must fail if signing or notarization secrets are
-  missing. Required GitHub Actions secrets:
-  - `MACOS_CODESIGN_CERTIFICATE_BASE64`
-  - `MACOS_CODESIGN_CERTIFICATE_PASSWORD`
-  - `CODESIGN_ID`
-  - `APP_STORE_CONNECT_API_KEY_P8`
-  - `APP_STORE_CONNECT_KEY_ID`
-  - `APP_STORE_CONNECT_ISSUER_ID`
-- The Homebrew tap workflow is upstream-only and manual; do not dispatch it from
-  fork release artifacts. Prerelease tags such as `v1.2.3-beta.1` must be marked
-  as GitHub prereleases and must not update Homebrew stable.
+- The package job runs on GitHub-hosted `ubuntu-latest` and uses only the
+  default `GITHUB_TOKEN` permissions. It should not require Apple signing,
+  notarization, private runners, npm tokens, or Homebrew tap secrets.
+- The GitHub Release tarball is the fork's install surface. On macOS, install it
+  with mise-managed Node/npm:
+  `mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/vX.Y.Z/oracle-X.Y.Z.tgz`.
 - `scripts/release.sh` is an upstream npm helper. Fork releases should prefer the
   GitHub Release tarball workflow. npm publish still requires
   `ORACLE_UPSTREAM_RELEASE=1` and OTP; stop at `Enter OTP:` and ask the user for
   the code.
 - Beta npm publishing requires a new beta version (for example,
   `0.4.4-beta.1`); npm will not let you overwrite an existing beta tag.
-- Sparkle signing key lives at
-  `/Users/steipete/Library/CloudStorage/Dropbox/Backup/Sparkle`; set
-  `SPARKLE_PRIVATE_KEY_FILE` to that path when notarizing the notifier outside
-  GitHub Actions.
 
 ## Verification expectations
 

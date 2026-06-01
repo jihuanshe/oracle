@@ -48,8 +48,14 @@ oracle --engine browser --browser-manual-login \
 
 ## Quick start
 
-Install globally: `npm install -g @steipete/oracle`
-Homebrew: `brew install steipete/tap/oracle`
+Install this fork from its GitHub Release tarball with mise-managed Node/npm:
+
+```bash
+curl https://mise.run | sh
+mise use -g node@24
+mise exec -- npm install -g https://github.com/jihuanshe/oracle/releases/download/v0.13.0/oracle-0.13.0.tgz
+oracle --version
+```
 
 Requires Node 24+. Or use `npx -y @steipete/oracle …` (or pnpx).
 
