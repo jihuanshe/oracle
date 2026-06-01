@@ -12,6 +12,7 @@ on:
         type: string
 
 permissions:
+  actions: write
   contents: write
 
 concurrency:
@@ -35,8 +36,13 @@ jobs:
             exit 1
           fi
           version="${tag#v}"
+          prerelease="false"
+          if [[ "$version" == *-* ]]; then
+            prerelease="true"
+          fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
 
       - name: Check out release tag
         uses: actions/checkout@v6
@@ -121,13 +127,24 @@ jobs:
           if [[ ! -s "$notes_file" ]]; then
             printf 'Release %s.\n' "$version" > "$notes_file"
           fi
+          release_flags=()
+          if [[ "${{ steps.release.outputs.prerelease }}" == "true" ]]; then
+            release_flags+=(--prerelease)
+          fi
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release edit "$tag" --title "$version" --notes-file "$notes_file"
+            gh release edit "$tag" --title "$version" --notes-file "$notes_file" "${release_flags[@]}"
           else
-            gh release create "$tag" --title "$version" --notes-file "$notes_file"
+            gh release create "$tag" --title "$version" --notes-file "$notes_file" "${release_flags[@]}"
           fi
           gh release upload "$tag" \
             "${{ steps.pack.outputs.dir }}/${{ steps.pack.outputs.artifact }}" \
             "${{ steps.pack.outputs.dir }}/${{ steps.pack.outputs.artifact }}.sha1" \
             "${{ steps.pack.outputs.dir }}/${{ steps.pack.outputs.artifact }}.sha256" \
             --clobber
+
+      - name: Dispatch Homebrew tap update
+        if: ${{ steps.release.outputs.prerelease != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh workflow run update-homebrew-tap.yml -f tag="${{ steps.release.outputs.tag }}"
