@@ -1,0 +1,133 @@
+name: Release package
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish, for example v0.13.1"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-package-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Build package artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Resolve release tag
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.tag || github.ref_name }}"
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Release tag must look like v1.2.3 or v1.2.3-beta.1; got '$tag'." >&2
+            exit 1
+          fi
+          version="${tag#v}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Check out release tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Verify package version matches tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_version="$(node -p "require('./package.json').version")"
+          if [[ "$package_version" != "${{ steps.release.outputs.version }}" ]]; then
+            echo "package.json version '$package_version' does not match tag '${{ steps.release.outputs.tag }}'." >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run release gates
+        run: |
+          pnpm run check
+          pnpm run test
+          pnpm run build
+          pnpm run test:packed-cli
+
+      - name: Pack npm tarball
+        id: pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          outdir="$RUNNER_TEMP/oracle-package"
+          mkdir -p "$outdir"
+          pnpm pack --pack-destination "$outdir"
+          packed="$(find "$outdir" -maxdepth 1 -name '*.tgz' -print -quit)"
+          if [[ -z "$packed" ]]; then
+            echo "pnpm pack did not produce a tarball." >&2
+            exit 1
+          fi
+          artifact="oracle-${{ steps.release.outputs.version }}.tgz"
+          mv "$packed" "$outdir/$artifact"
+          (
+            cd "$outdir"
+            shasum "$artifact" > "$artifact.sha1"
+            shasum -a 256 "$artifact" > "$artifact.sha256"
+          )
+          echo "dir=$outdir" >> "$GITHUB_OUTPUT"
+          echo "artifact=$artifact" >> "$GITHUB_OUTPUT"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: oracle-${{ steps.release.outputs.version }}
+          path: |
+            ${{ steps.pack.outputs.dir }}/${{ steps.pack.outputs.artifact }}
+            ${{ steps.pack.outputs.dir }}/${{ steps.pack.outputs.artifact }}.sha1
+            ${{ steps.pack.outputs.dir }}/${{ steps.pack.outputs.artifact }}.sha256
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.release.outputs.tag }}"
+          version="${{ steps.release.outputs.version }}"
+          notes_file="$RUNNER_TEMP/release-notes.md"
+          awk -v version="$version" '
+            $0 == "## " version || $0 ~ "^## " version " [—-]" { capture=1; next }
+            capture && /^## / { exit }
+            capture { print }
+          ' CHANGELOG.md | sed '/./,$!d' > "$notes_file"
+          if [[ ! -s "$notes_file" ]]; then
+            printf 'Release %s.\n' "$version" > "$notes_file"
+          fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --title "$version" --notes-file "$notes_file"
+          else
+            gh release create "$tag" --title "$version" --notes-file "$notes_file"
+          fi
+          gh release upload "$tag" \
+            "${{ steps.pack.outputs.dir }}/${{ steps.pack.outputs.artifact }}" \
+            "${{ steps.pack.outputs.dir }}/${{ steps.pack.outputs.artifact }}.sha1" \
+            "${{ steps.pack.outputs.dir }}/${{ steps.pack.outputs.artifact }}.sha256" \
+            --clobber

@@ -1,6 +1,8 @@
-# Release Checklist (npm + Homebrew)
+# Release Checklist (npm + GitHub Releases + Homebrew)
 
 > For a guarded, phased flow, run `./scripts/release.sh <phase>` (gates | artifacts | publish | smoke | tag | all); it stops on the first error so you can resume after fixing issues.
+
+The `Release package` GitHub Action builds the npm tarball from a `vX.Y.Z` tag, uploads `oracle-X.Y.Z.tgz` plus SHA1/SHA256 checksums to the GitHub Release, and keeps `dist/` out of git. Use it for release artifacts instead of committing built output or relying on npm's Git dependency preparation path.
 
 1. **Version & metadata**
    - [ ] Update `package.json` version (e.g., `1.0.0`).
@@ -12,10 +14,10 @@
    - [ ] Run `pnpm run build` (ensure `dist/` is current).
    - [ ] Verify `bin` mapping in `package.json` points to `dist/bin/oracle-cli.js`.
 
-- [ ] Produce npm tarball and checksums:
+- [ ] Produce npm tarball and checksums locally only when you need to inspect them before tagging:
   - `npm pack --pack-destination /tmp` (after build)
   - Move the tarball into repo root (e.g., `oracle-<version>.tgz`) and generate `*.sha1` / `*.sha256`.
-  - Keep these files handy for the GitHub release; do **not** commit them.
+  - Keep these files for local verification only; do **not** commit them. The GitHub Action uploads the release copies after the tag is pushed.
 - [ ] Rebuild macOS notifier helper with signing + notarization:
   - `cd vendor/oracle-notifier && ./build-notifier.sh` (requires `CODESIGN_ID` and `APP_STORE_CONNECT_*`).
   - Signing inputs (same as Trimmy): `CODESIGN_ID="Developer ID Application: Peter Steinberger (Y5PE65HELJ)"` plus notary env vars `APP_STORE_CONNECT_API_KEY_P8`, `APP_STORE_CONNECT_KEY_ID`, and `APP_STORE_CONNECT_ISSUER_ID`.
@@ -49,6 +51,7 @@
    - [ ] `npm view @steipete/oracle version` (and optionally `npm view @steipete/oracle time`) to confirm the registry shows the new version.
    - [ ] Verify positional prompt still works: `npx -y @steipete/oracle "Test prompt" --dry-run`.
 6. **Homebrew (tap)**
+   - [ ] The `Release package` workflow has uploaded `oracle-<version>.tgz` and checksum assets to the GitHub release.
    - [ ] The `Update Homebrew Tap` workflow dispatches `steipete/homebrew-tap` after the GitHub release is published.
    - [ ] If needed, run `.github/workflows/update-homebrew-tap.yml` manually with the release tag after assets are live.
    - [ ] Confirm the tap workflow updated `Formula/oracle.rb` to the GitHub release asset and committed the SHA256.

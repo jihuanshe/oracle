@@ -1,0 +1,9 @@
+packages:
+  - "."
+
+overrides:
+  devtools-protocol: 0.0.1638241
+  vite: 7.3.2
+
+onlyBuiltDependencies:
+  - esbuild
