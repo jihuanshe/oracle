@@ -69,7 +69,14 @@ jobs:
           APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-        run: vendor/oracle-notifier/build-notifier.sh
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CODESIGN_ID"
+          test -n "$APP_STORE_CONNECT_API_KEY_P8"
+          test -n "$APP_STORE_CONNECT_KEY_ID"
+          test -n "$APP_STORE_CONNECT_ISSUER_ID"
+          vendor/oracle-notifier/build-notifier.sh
 
       - name: Archive notifier app
         shell: bash
