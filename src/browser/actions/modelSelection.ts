@@ -18,6 +18,9 @@ export async function ensureModelSelection(
   logger: BrowserLogger,
   strategy: BrowserModelStrategy = "select",
 ): Promise<BrowserModelSelectionEvidence> {
+  if (strategy === "select") {
+    await waitForModelSelectorButton(Runtime).catch(() => undefined);
+  }
   const outcome = await Runtime.evaluate({
     expression: buildModelSelectionExpression(desiredModel, strategy),
     awaitPromise: true,
@@ -32,6 +35,7 @@ export async function ensureModelSelection(
         status: "option-not-found";
         hint?: { temporaryChat?: boolean; availableOptions?: string[] };
       }
+    | { status: "unavailable"; label?: string | null }
     | { status: "button-missing" }
     | undefined;
 
@@ -67,11 +71,72 @@ export async function ensureModelSelection(
         `Unable to find model option matching "${desiredModel}" in the model switcher.${availableHint}${tempHint}`,
       );
     }
+    case "unavailable": {
+      const label = result.label ?? null;
+      logger(`Model picker: unavailable${label ? ` (${label})` : ""}`);
+      return {
+        requestedModel: desiredModel,
+        resolvedLabel: label,
+        strategy,
+        status: "unavailable",
+        verified: false,
+        source: "chatgpt-model-picker",
+        capturedAt: new Date().toISOString(),
+      };
+    }
     default: {
       await logDomFailure(Runtime, logger, "model-switcher-button");
       throw new Error("Unable to locate the ChatGPT model selector button.");
     }
   }
+}
+
+async function waitForModelSelectorButton(
+  Runtime: ChromeClient["Runtime"],
+  timeoutMs = 8_000,
+): Promise<boolean> {
+  const outcome = await Runtime.evaluate({
+    expression: buildModelSelectorWaitExpression(timeoutMs),
+    awaitPromise: true,
+    returnByValue: true,
+  });
+  return outcome.result?.value === true;
+}
+
+function buildModelSelectorWaitExpression(timeoutMs: number): string {
+  const modelButtonSelectorLiteral = JSON.stringify(
+    `${MODEL_BUTTON_SELECTOR}, button.__composer-pill`,
+  );
+  return `(async () => {
+    const TIMEOUT_MS = ${JSON.stringify(timeoutMs)};
+    const SELECTOR = ${modelButtonSelectorLiteral};
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const normalizeText = (value) => (value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\\s+/g, ' ')
+      .trim();
+    const hasToken = (value, token) => normalizeText(value).split(' ').includes(token);
+    const looksLikeModelSelector = (node) => {
+      if (!(node instanceof HTMLElement)) return false;
+      const label = normalizeText(
+        (node.textContent ?? '') + ' ' + (node.getAttribute('aria-label') ?? '') + ' ' + (node.getAttribute('title') ?? '')
+      );
+      if (!label || label.includes('click to remove')) return false;
+      const tokens = ['chatgpt', 'gpt', 'instant', 'medium', 'high', 'extra', 'thinking', 'pro', 'extended', 'standard', 'heavy', 'light'];
+      const isExplicitSwitcher = node.getAttribute('data-testid') === 'model-switcher-dropdown-button';
+      const isComposerPill = node.matches?.('button.__composer-pill');
+      return (isExplicitSwitcher || isComposerPill || node.getAttribute('aria-haspopup') === 'menu') && tokens.some((token) => hasToken(label, token));
+    };
+    const start = performance.now();
+    while (performance.now() - start < TIMEOUT_MS) {
+      if (Array.from(document.querySelectorAll(SELECTOR)).some(looksLikeModelSelector)) {
+        return true;
+      }
+      await sleep(100);
+    }
+    return false;
+  })()`;
 }
 
 function assertResolvedModelSelection(desiredModel: string, resolvedLabel: string): void {
@@ -144,10 +209,11 @@ function buildModelSelectionExpression(
   const composerAllowBlankLiteral = JSON.stringify(composerSignalMatchers.allowBlank);
   const menuContainerLiteral = JSON.stringify(MENU_CONTAINER_SELECTOR);
   const menuItemLiteral = JSON.stringify(MENU_ITEM_SELECTOR);
+  const modelButtonSelectorLiteral = JSON.stringify(MODEL_BUTTON_SELECTOR);
   return `(() => {
     ${buildClickDispatcher()}
     // Capture the selectors and matcher literals up front so the browser expression stays pure.
-    const BUTTON_SELECTOR = '${MODEL_BUTTON_SELECTOR}';
+    const MODEL_BUTTON_SELECTOR = ${modelButtonSelectorLiteral};
     const COMPOSER_MODEL_SIGNAL_SELECTOR = ${composerSignalSelectorLiteral};
     const LABEL_TOKENS = ${labelLiteral};
     const TEST_IDS = ${idLiteral};
@@ -228,6 +294,17 @@ function buildModelSelectionExpression(
           return hasToken(label, 'pro') && !hasToken(label, 'thinking');
         })
     );
+    const getComposerModelLabel = () =>
+      (document.querySelector(COMPOSER_MODEL_SIGNAL_SELECTOR)?.textContent ?? '').trim();
+    const withProPillSignal = (label) => {
+      const resolved = label || '';
+      if (!wantsPro || !hasProComposerPill()) return resolved;
+      const normalized = normalizeText(resolved);
+      if (!normalized) return resolved;
+      if (normalized.includes('thinking')) return 'Pro';
+      if (normalized.includes('pro')) return resolved;
+      return resolved + ' + Pro';
+    };
 
     const isVisibleElement = (node) => {
       if (!(node instanceof HTMLElement)) return false;
@@ -243,17 +320,36 @@ function buildModelSelectionExpression(
       );
       if (!label) return false;
       if (label.includes('click to remove')) return false;
-      const modelTokens = ['chatgpt', 'gpt', 'instant', 'thinking', 'pro', 'extended', 'standard', 'heavy', 'light'];
+      const modelTokens = [
+        'chatgpt',
+        'gpt',
+        'instant',
+        'medium',
+        'high',
+        'extra',
+        'thinking',
+        'pro',
+        'extended',
+        'standard',
+        'heavy',
+        'light',
+      ];
       return modelTokens.some((token) => hasToken(label, token));
     };
     const findModelButton = () => {
-      const explicit = document.querySelector(BUTTON_SELECTOR);
+      const explicit = document.querySelector('[data-testid="model-switcher-dropdown-button"]');
       if (explicit) return explicit;
-      return Array.from(document.querySelectorAll('button.__composer-pill')).find(looksLikeModelPill) ?? null;
+      return Array.from(document.querySelectorAll(MODEL_BUTTON_SELECTOR + ', button.__composer-pill')).find(looksLikeModelPill) ?? null;
     };
 
     const button = findModelButton();
     if (!button) {
+      if (MODEL_STRATEGY === 'current') {
+        return {
+          status: 'unavailable',
+          label: withProPillSignal(getComposerModelLabel()) || null,
+        };
+      }
       return { status: 'button-missing' };
     }
 
@@ -278,18 +374,7 @@ function buildModelSelectionExpression(
     };
 
     const getButtonLabel = () => (button.textContent ?? '').trim();
-    const getComposerModelLabel = () =>
-      (document.querySelector(COMPOSER_MODEL_SIGNAL_SELECTOR)?.textContent ?? '').trim();
     const readComposerModelSignal = () => normalizeText(getComposerModelLabel());
-    const withProPillSignal = (label) => {
-      const resolved = label || '';
-      if (!wantsPro || !hasProComposerPill()) return resolved;
-      const normalized = normalizeText(resolved);
-      if (!normalized) return resolved;
-      if (normalized.includes('thinking')) return 'Pro';
-      if (normalized.includes('pro')) return resolved;
-      return resolved + ' + Pro';
-    };
     const getResolvedLabel = (fallback) =>
       withProPillSignal(getComposerModelLabel() || getButtonLabel() || fallback);
     const isThinkingEffortLabel = (label) =>

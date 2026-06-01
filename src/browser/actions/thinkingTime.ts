@@ -160,10 +160,16 @@ function buildThinkingTimeExpression(
     const LEVEL_TOKENS = {
       light: ['light', '轻'],
       standard: ['standard', '标准'],
-      extended: ['extended', '扩展', '深度', '加强'],
-      heavy: ['heavy', '重度', '加重', '高'],
+      extended: ['extended', 'high', '扩展', '深度', '加强'],
+      heavy: ['heavy', 'extra high', '重度', '加重', '高'],
     };
     const targetTokens = LEVEL_TOKENS[TARGET_LEVEL] || [TARGET_LEVEL];
+    const INTELLIGENCE_LABELS = {
+      light: ['instant'],
+      standard: ['medium', 'standard'],
+      extended: ['high'],
+      heavy: ['extra high'],
+    };
 
     const INITIAL_WAIT_MS = 150;
     const STEP_WAIT_MS = 200;
@@ -194,6 +200,10 @@ function buildThinkingTimeExpression(
           new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }),
         );
       } catch {}
+    };
+    const hasStableBox = (node) => {
+      const r = node?.getBoundingClientRect?.();
+      return Boolean(r && r.width > 0 && r.height > 0 && node.getAttribute?.('aria-hidden') !== 'true');
     };
 
     // ---------- OLD UI: standalone composer chip labelled "Thinking" ----------
@@ -235,6 +245,164 @@ function buildThinkingTimeExpression(
       }
       return null;
     };
+
+    // ---------- CURRENT UI: composer "Intelligence" picker ----------
+    // ChatGPT's 2026 UI moved model + effort into one composer pill. The visible
+    // button may say "High" or "Extra High"; Pro has a nested Standard/Extended submenu.
+    const CURRENT_PICKER_SELECTOR = '[data-testid="composer-intelligence-picker-content"]';
+    const CURRENT_PRO_TRIGGER_SELECTOR = '[data-testid="composer-intelligence-pro-thinking-effort-trigger"]';
+    const isCurrentIntelligenceButton = (btn) => {
+      if (!(btn instanceof HTMLElement) || !hasStableBox(btn)) return false;
+      const text = normalize((btn.textContent ?? '') + ' ' + (btn.getAttribute('aria-label') ?? ''));
+      return (
+        text === 'instant' ||
+        text === 'medium' ||
+        text === 'high' ||
+        text === 'extra high' ||
+        text === 'pro standard' ||
+        text === 'pro extended' ||
+        text.includes('gpt 5')
+      );
+    };
+    const findIntelligenceButton = () => {
+      const explicit = document.querySelector('[data-testid="model-switcher-dropdown-button"]');
+      if (isCurrentIntelligenceButton(explicit)) return explicit;
+      const buttons = Array.from(document.querySelectorAll(MODEL_BUTTON_SELECTOR));
+      return buttons.find(isCurrentIntelligenceButton) ?? null;
+    };
+    const findCurrentPicker = () => {
+      const content = document.querySelector(CURRENT_PICKER_SELECTOR);
+      if (content) return content.closest('[role="menu"]') || content;
+      const menus = document.querySelectorAll(MENU_CONTAINER_SELECTOR);
+      for (const menu of menus) {
+        const text = normalize(menu.textContent ?? '');
+        if (
+          text.includes('intelligence') &&
+          text.includes('instant') &&
+          text.includes('medium') &&
+          text.includes('high')
+        ) {
+          return menu;
+        }
+      }
+      return null;
+    };
+    const exactNormalized = (node) => normalize(node?.textContent ?? '');
+    const findExactMenuItem = (root, labels) => {
+      const normalizedLabels = labels.map((label) => normalize(label));
+      for (const item of root.querySelectorAll(MENU_ITEM_SELECTOR)) {
+        if (!(item instanceof HTMLElement) || !hasStableBox(item)) continue;
+        const text = exactNormalized(item);
+        if (normalizedLabels.includes(text)) return item;
+      }
+      return null;
+    };
+    const resolveControlledMenu = (trigger) => {
+      const id = trigger?.getAttribute?.('aria-controls');
+      if (id) {
+        const controlled = document.getElementById?.(id);
+        if (controlled) return controlled;
+      }
+      return null;
+    };
+    const findProEffortMenu = (trigger) => {
+      const controlled = resolveControlledMenu(trigger);
+      if (controlled) return controlled;
+      const menus = document.querySelectorAll(MENU_CONTAINER_SELECTOR);
+      for (const menu of menus) {
+        const text = normalize(menu.textContent ?? '');
+        if (text.includes('pro standard') && text.includes('pro extended')) return menu;
+      }
+      return null;
+    };
+    const buttonLabelMatchesCurrentTarget = (button, labels) => {
+      const text = normalize(button?.textContent ?? '');
+      return labels.map((label) => normalize(label)).includes(text);
+    };
+    const openCurrentPicker = async (button) => {
+      if (!findCurrentPicker() && button.getAttribute?.('aria-expanded') !== 'true') {
+        dispatchClickSequence(button);
+        await sleep(INITIAL_WAIT_MS);
+      }
+      const deadline = performance.now() + MAX_WAIT_MS;
+      while (performance.now() < deadline) {
+        const picker = findCurrentPicker();
+        if (picker) return picker;
+        if (button.getAttribute?.('aria-expanded') !== 'true') dispatchClickSequence(button);
+        await sleep(100);
+      }
+      return null;
+    };
+    const selectCurrentIntelligence = async () => {
+      const button = findIntelligenceButton();
+      if (!button) return null;
+      const targetLabels =
+        TARGET_MODEL_KIND === 'pro'
+          ? (TARGET_LEVEL === 'light' || TARGET_LEVEL === 'standard'
+            ? ['Pro Standard']
+            : ['Pro Extended'])
+          : (INTELLIGENCE_LABELS[TARGET_LEVEL] || [TARGET_LEVEL]);
+      if (buttonLabelMatchesCurrentTarget(button, targetLabels)) {
+        return { status: 'already-selected', label: targetLabels[0] };
+      }
+      const picker = await openCurrentPicker(button);
+      if (!picker) return { status: 'menu-not-found' };
+
+      if (TARGET_MODEL_KIND === 'pro') {
+        const trigger = picker.querySelector(CURRENT_PRO_TRIGGER_SELECTOR);
+        if (trigger instanceof HTMLElement) {
+          dispatchClickSequence(trigger);
+          await sleep(STEP_WAIT_MS);
+          let submenu = null;
+          const submenuDeadline = performance.now() + MAX_WAIT_MS;
+          while (performance.now() < submenuDeadline) {
+            submenu = findProEffortMenu(trigger);
+            if (submenu) break;
+            await sleep(100);
+          }
+          if (submenu) {
+            const effortOption = findExactMenuItem(submenu, targetLabels);
+            if (effortOption && !optionIsSelected(effortOption)) {
+              dispatchClickSequence(effortOption);
+              await sleep(STEP_WAIT_MS);
+            }
+          }
+        }
+
+        if (buttonLabelMatchesCurrentTarget(button, targetLabels)) {
+          closeOpenMenus();
+          return { status: 'switched', label: targetLabels[0] };
+        }
+
+        const reopenedPicker = findCurrentPicker() || await openCurrentPicker(button);
+        if (!reopenedPicker) return { status: 'menu-not-found' };
+        const topLevelPro = findExactMenuItem(reopenedPicker, targetLabels) ||
+          findExactMenuItem(reopenedPicker, ['Pro Extended', 'Pro Standard']);
+        if (!topLevelPro) {
+          closeOpenMenus();
+          return { status: 'option-not-found' };
+        }
+        const already = optionIsSelected(topLevelPro) && buttonLabelMatchesCurrentTarget(button, targetLabels);
+        dispatchClickSequence(topLevelPro);
+        await sleep(STEP_WAIT_MS);
+        closeOpenMenus();
+        return { status: already ? 'already-selected' : 'switched', label: targetLabels[0] };
+      }
+
+      const item = findExactMenuItem(picker, targetLabels);
+      if (!item) {
+        closeOpenMenus();
+        return { status: 'option-not-found' };
+      }
+      const already = optionIsSelected(item);
+      dispatchClickSequence(item);
+      await sleep(STEP_WAIT_MS);
+      closeOpenMenus();
+      return { status: already ? 'already-selected' : 'switched', label: item.textContent?.trim?.() || targetLabels[0] };
+    };
+
+    const currentUiOutcome = await selectCurrentIntelligence();
+    if (currentUiOutcome) return currentUiOutcome;
 
     const oldChip = findOldChip();
     if (oldChip) {
@@ -333,10 +501,6 @@ function buildThinkingTimeExpression(
         return hasToken(text, 'instant') && !hasToken(text, 'thinking') && !hasToken(text, 'pro');
       }
       return false;
-    };
-    const hasStableBox = (node) => {
-      const r = node.getBoundingClientRect?.();
-      return Boolean(r && r.width > 0 && r.height > 0 && node.getAttribute?.('aria-hidden') !== 'true');
     };
     const pickSingleStableTrailing = (trailings) => {
       const visible = trailings.filter((t) => hasStableBox(t));

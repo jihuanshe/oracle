@@ -262,6 +262,7 @@ const createNonPickerMenuForTest = (labels: string[]): unknown => {
 const evaluateComposerPillFallbackExpression = (
   targetModel: string,
   pillLabel: string,
+  strategy: "select" | "current" = "select",
 ): unknown => {
   class FakeElement {
     constructor(public textContent: string) {}
@@ -280,7 +281,7 @@ const evaluateComposerPillFallbackExpression = (
   }
 
   const pill = new FakeElement(pillLabel);
-  const expression = buildModelSelectionExpressionForTest(targetModel);
+  const expression = buildModelSelectionExpressionForTest(targetModel, strategy);
   const documentStub = {
     querySelector: (selector: string) => {
       if (selector.includes("model-switcher-dropdown-button")) {
@@ -546,6 +547,18 @@ describe("browser model selection matchers", () => {
   it("finds the current model pill when ChatGPT omits aria-haspopup", () => {
     const result = evaluateComposerPillFallbackExpression("Thinking 5.5", "Thinking Heavy");
     expect(result).toEqual({ status: "already-selected", label: "Thinking Heavy" });
+  });
+
+  it("treats ChatGPT's current Intelligence pill as the model picker", () => {
+    for (const label of ["High", "Extra High", "Medium", "Instant"]) {
+      const result = evaluateComposerPillFallbackExpression("gpt-5.5-pro", label, "current");
+      expect(result).toEqual({ status: "already-selected", label });
+    }
+  });
+
+  it("lets current strategy continue when the model picker is genuinely unavailable", () => {
+    const result = evaluateComposerPillFallbackExpression("gpt-5.5-pro", "Plain", "current");
+    expect(result).toEqual({ status: "unavailable", label: null });
   });
 
   it("does not treat per-row thinking effort controls as model options", () => {

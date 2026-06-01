@@ -37,6 +37,15 @@ describe("browser thinking-time selection expression", () => {
     expect(expression).toContain("LEVEL_TOKENS");
   });
 
+  it("supports ChatGPT's current Intelligence picker", () => {
+    const expression = buildThinkingTimeExpressionForTest("extended", "gpt-5.5-pro");
+    expect(expression).toContain("composer-intelligence-picker-content");
+    expect(expression).toContain("composer-intelligence-pro-thinking-effort-trigger");
+    expect(expression).toContain("Pro Extended");
+    expect(expression).toContain("extra high");
+    expect(expression).toContain("isCurrentIntelligenceButton");
+  });
+
   it("targets the selected model row before opening the effort menu", () => {
     const expression = buildThinkingTimeExpressionForTest("extended");
     expect(expression).toContain("const findEffortRow");
