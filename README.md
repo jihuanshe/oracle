@@ -53,6 +53,26 @@ Homebrew: `brew install steipete/tap/oracle`
 
 Requires Node 24+. Or use `npx -y @steipete/oracle …` (or pnpx).
 
+## Development
+
+Oracle pins its development toolchain with mise:
+
+```bash
+mise install
+mise run install
+mise run check
+mise run test
+mise run build
+```
+
+Use `mise tasks` to list the repo task entrypoints. Project dependencies still live in pnpm; mise only selects the Node/pnpm versions and wraps common commands.
+
+Git hooks are managed by prek and use the same mise-pinned tools:
+
+```bash
+mise exec -- prek install
+```
+
 ```bash
 # Copy the bundle and paste into ChatGPT
 npx -y @steipete/oracle --render --copy -p "Review the TS data layer for schema drift" --file "src/**/*.ts,*/*.test.ts"

@@ -1,8 +1,6 @@
-name: Update Homebrew Tap
+name: Update Homebrew Tap (upstream only)
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -17,6 +15,12 @@ jobs:
   update-homebrew-tap:
     runs-on: ubuntu-latest
     steps:
+      - name: Require upstream repository
+        if: ${{ github.repository != 'steipete/oracle' }}
+        run: |
+          echo "This workflow updates steipete/homebrew-tap and is disabled outside steipete/oracle." >&2
+          exit 1
+
       - name: Resolve release tag
         id: release
         shell: bash

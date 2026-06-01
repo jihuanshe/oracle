@@ -16,18 +16,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
-          node-version: "24"
-      - uses: pnpm/action-setup@v6
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run lint
-      - run: pnpm run docs:check
+          install: true
+          cache: false
+      - run: mise run install
+      - run: mise run lint
+      - run: mise run docs-check
         if: matrix.os == 'ubuntu-latest'
-      - run: pnpm run docs:site
+      - run: mise run docs-site
         if: matrix.os == 'ubuntu-latest'
-      - run: pnpm run test
-      - run: pnpm run build
+      - run: mise run test
+      - run: mise run build
         if: matrix.os == 'ubuntu-latest'
-      - run: pnpm run test:packed-cli
+      - run: mise run test-packed-cli
         if: matrix.os == 'ubuntu-latest'

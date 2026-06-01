@@ -1,4 +1,4 @@
-import { cp, mkdir, stat } from "node:fs/promises";
+import { cp, mkdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -16,6 +16,7 @@ async function main() {
     return;
   }
 
+  await rm(target, { recursive: true, force: true });
   await mkdir(targetDir, { recursive: true });
   await cp(source, target, { recursive: true });
   console.log(`Copied ${source} -> ${target}`);

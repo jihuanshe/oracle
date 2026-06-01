@@ -35,6 +35,16 @@ pnpx @steipete/oracle --help
 
 `npx` is fine for CI, ad-hoc scripts, or when you don't want a global binary on the box. Cache the package in CI by pinning the version (`@steipete/oracle@0.12.1`) so you don't re-download on every job.
 
+## GitHub Release tarball
+
+Each GitHub Release includes the same npm package tarball that Homebrew consumes:
+
+```bash
+npm install -g https://github.com/steipete/oracle/releases/download/v0.13.0/oracle-0.13.0.tgz
+```
+
+For a fork, replace the repository and version in the URL. This path installs a prebuilt package artifact; installing from a Git ref is intentionally not the supported path because npm prepares Git dependencies in a temporary checkout and can miss the pnpm-built `dist/` output.
+
 ## API keys (optional)
 
 API mode is opt-in and reads keys from the environment. Set whichever providers you'll use:

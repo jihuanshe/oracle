@@ -1,0 +1,56 @@
+[tools]
+node = "24.16.0"
+pnpm = "10.33.2"
+prek = { version = "0.4.1", backend = "aqua:j178/prek" }
+
+[settings]
+lockfile_platforms = ["macos-arm64", "linux-x64", "windows-x64"]
+
+[tasks.install]
+description = "Install dependencies from pnpm-lock.yaml"
+run = "pnpm install --frozen-lockfile"
+
+[tasks.check]
+description = "Run formatting, typecheck, and lint checks"
+run = "pnpm run check"
+
+[tasks.lint]
+description = "Run typecheck and oxlint"
+run = "pnpm run lint"
+
+[tasks.format]
+description = "Format the repository"
+run = "pnpm run format"
+
+[tasks.format-check]
+description = "Check repository formatting"
+run = "pnpm run format:check"
+
+[tasks.test]
+description = "Run the unit test suite"
+run = "pnpm run test"
+
+[tasks.build]
+description = "Build the CLI package"
+run = "pnpm run build"
+
+[tasks.docs-check]
+description = "Verify documented flags match CLI help"
+run = "pnpm run docs:check"
+
+[tasks.docs-site]
+description = "Build the docs site"
+run = "pnpm run docs:site"
+
+[tasks.test-packed-cli]
+description = "Smoke-test the packed CLI tarball"
+run = "pnpm run test:packed-cli"
+
+[tasks.ci]
+description = "Run the default local CI checks"
+run = """
+pnpm run check
+pnpm run test
+pnpm run build
+pnpm run test:packed-cli
+"""

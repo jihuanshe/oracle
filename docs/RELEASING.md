@@ -1,21 +1,23 @@
-# Release Checklist (npm + Homebrew)
+# Release Checklist (npm + GitHub Releases + Homebrew)
 
 > For a guarded, phased flow, run `./scripts/release.sh <phase>` (gates | artifacts | publish | smoke | tag | all); it stops on the first error so you can resume after fixing issues.
+
+The `Release package` GitHub Action builds the signed macOS notifier app, builds the npm tarball from a `vX.Y.Z` tag, uploads `oracle-X.Y.Z.tgz` plus SHA1/SHA256 checksums to the GitHub Release, and keeps `dist/` out of git. Use it for release artifacts instead of committing built output or relying on npm's Git dependency preparation path. Development and CI tool versions are pinned in `.mise/config.toml`; run `mise install` before local release checks.
 
 1. **Version & metadata**
    - [ ] Update `package.json` version (e.g., `1.0.0`).
    - [ ] Update any mirrored version strings (CLI banner/help, docs metadata) to match.
    - [ ] Confirm package metadata (name, description, repository, keywords, license, `files`/`.npmignore`).
-   - [ ] If dependencies changed, run `pnpm install` so `pnpm-lock.yaml` is current.
-   - [ ] Source `~/.profile` so codesign/notary env vars are available before building the notifier.
+   - [ ] If dependencies changed, run `mise run install` so `pnpm-lock.yaml` is current.
+   - [ ] Confirm GitHub Actions has `MACOS_CODESIGN_CERTIFICATE_BASE64`, `MACOS_CODESIGN_CERTIFICATE_PASSWORD`, `CODESIGN_ID`, `APP_STORE_CONNECT_API_KEY_P8`, `APP_STORE_CONNECT_KEY_ID`, and `APP_STORE_CONNECT_ISSUER_ID` secrets for the notifier build.
 2. **Artifacts**
-   - [ ] Run `pnpm run build` (ensure `dist/` is current).
+   - [ ] Run `mise run build` (ensure `dist/` is current).
    - [ ] Verify `bin` mapping in `package.json` points to `dist/bin/oracle-cli.js`.
 
-- [ ] Produce npm tarball and checksums:
+- [ ] Produce npm tarball and checksums locally only when you need to inspect them before tagging:
   - `npm pack --pack-destination /tmp` (after build)
   - Move the tarball into repo root (e.g., `oracle-<version>.tgz`) and generate `*.sha1` / `*.sha256`.
-  - Keep these files handy for the GitHub release; do **not** commit them.
+  - Keep these files for local verification only; do **not** commit them. The GitHub Action uploads the release copies after the tag is pushed.
 - [ ] Rebuild macOS notifier helper with signing + notarization:
   - `cd vendor/oracle-notifier && ./build-notifier.sh` (requires `CODESIGN_ID` and `APP_STORE_CONNECT_*`).
   - Signing inputs (same as Trimmy): `CODESIGN_ID="Developer ID Application: Peter Steinberger (Y5PE65HELJ)"` plus notary env vars `APP_STORE_CONNECT_API_KEY_P8`, `APP_STORE_CONNECT_KEY_ID`, and `APP_STORE_CONNECT_ISSUER_ID`.
@@ -31,11 +33,11 @@
 - [ ] **Release notes must exactly match the version’s changelog section** (full Added/Changed/Fixed/Tests bullets, no omissions). After creating the GitHub release, compare the body to `CHANGELOG.md` and fix any mismatch.
 
 4. **Validation**
-   - [ ] `pnpm run check` (zero warnings allowed; fail on any lint/type warnings).
-   - [ ] `pnpm vitest`
-   - [ ] `pnpm run lint`
-   - [ ] Optional live smoke (with real `OPENAI_API_KEY`): `ORACLE_LIVE_TEST=1 pnpm vitest run tests/live/openai-live.test.ts`
-   - [ ] MCP sanity check: with `config/mcporter.json` pointed at the local stdio server (`oracle-local`), run `mcporter list oracle-local --schema --config config/mcporter.json` after building (`pnpm build`) to ensure tools/resources are discoverable.
+   - [ ] `mise run check` (zero warnings allowed; fail on any lint/type warnings).
+   - [ ] `mise run test`
+   - [ ] `mise run lint`
+   - [ ] Optional live smoke (with real `OPENAI_API_KEY`): `mise exec -- env ORACLE_LIVE_TEST=1 pnpm vitest run tests/live/openai-live.test.ts`
+   - [ ] MCP sanity check: with `config/mcporter.json` pointed at the local stdio server (`oracle-local`), run `mcporter list oracle-local --schema --config config/mcporter.json` after building (`mise run build`) to ensure tools/resources are discoverable.
 5. **Publish (npm)**
    - [ ] Ensure git status is clean; commit and push any pending changes.
    - [ ] Avoid repeated browser auth: create a granular access token with **write** + **Bypass 2FA** at npmjs.com/settings/~/tokens, then export it (e.g., `export NPM_TOKEN=...` in `~/.profile`) and set `//registry.npmjs.org/:_authToken=${NPM_TOKEN}` in `~/.npmrc`.
@@ -48,9 +50,10 @@
    - [ ] If promoting later: `npm dist-tag add @steipete/oracle@X.Y.Z latest --otp <code>` (OTP required).
    - [ ] `npm view @steipete/oracle version` (and optionally `npm view @steipete/oracle time`) to confirm the registry shows the new version.
    - [ ] Verify positional prompt still works: `npx -y @steipete/oracle "Test prompt" --dry-run`.
-6. **Homebrew (tap)**
-   - [ ] The `Update Homebrew Tap` workflow dispatches `steipete/homebrew-tap` after the GitHub release is published.
-   - [ ] If needed, run `.github/workflows/update-homebrew-tap.yml` manually with the release tag after assets are live.
+6. **Homebrew (tap, upstream only)**
+   - [ ] The `Release package` workflow has uploaded `oracle-<version>.tgz` and checksum assets to the GitHub release.
+   - [ ] Fork releases stop here unless you intentionally maintain a tap. The `Update Homebrew Tap (upstream only)` workflow is manual and guarded to `steipete/oracle` because it dispatches `steipete/homebrew-tap`.
+   - [ ] In the upstream repository, run `.github/workflows/update-homebrew-tap.yml` manually with the release tag after assets are live.
    - [ ] Confirm the tap workflow updated `Formula/oracle.rb` to the GitHub release asset and committed the SHA256.
    - [ ] Verify install:
      - `brew uninstall oracle || true`

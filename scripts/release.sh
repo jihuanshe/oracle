@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Oracle release helper (npm)
+# Oracle release helper (upstream npm)
 # Phases: gates | artifacts | publish | smoke | tag | all
 # Defaults to using the guardrail runner (MCP_RUNNER or ./runner).
+# Fork releases should prefer .github/workflows/release-package.yml, which builds
+# GitHub Release tarballs without publishing to npm or the upstream Homebrew tap.
 
 RUNNER="${MCP_RUNNER:-./runner}"
-VERSION="${VERSION:-$(node -p "require('./package.json').version")}" 
+VERSION="${VERSION:-$(node -p "require('./package.json').version")}"
 
 if [[ "${CODEX_MANAGED_BY_NPM:-}" == "1" ]]; then
   export NPM_CONFIG_PROGRESS=false
@@ -49,6 +51,10 @@ phase_artifacts() {
 
 phase_publish() {
   banner "Publish to npm"
+  if [[ "${ORACLE_UPSTREAM_RELEASE:-}" != "1" ]]; then
+    echo "Refusing upstream npm publish. Set ORACLE_UPSTREAM_RELEASE=1 if you really intend to publish @steipete/oracle." >&2
+    exit 1
+  fi
   run "$RUNNER" pnpm publish --tag latest --access public
   run "$RUNNER" npm view @steipete/oracle version
   run "$RUNNER" npm view @steipete/oracle time
@@ -82,6 +88,7 @@ Phases (run individually or all):
 Environment:
   MCP_RUNNER (default ./runner) - guardrail wrapper
   VERSION    (default from package.json)
+  ORACLE_UPSTREAM_RELEASE=1     - required for npm publish
 EOF
 }
 
