@@ -6,7 +6,7 @@ set -euo pipefail
 # Defaults to using the guardrail runner (MCP_RUNNER or ./runner).
 
 RUNNER="${MCP_RUNNER:-./runner}"
-VERSION="${VERSION:-$(node -p "require('./package.json').version")}" 
+VERSION="${VERSION:-$(node -p "require('./package.json').version")}"
 
 if [[ "${CODEX_MANAGED_BY_NPM:-}" == "1" ]]; then
   export NPM_CONFIG_PROGRESS=false

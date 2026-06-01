@@ -67,6 +67,12 @@ mise run build
 
 Use `mise tasks` to list the repo task entrypoints. Project dependencies still live in pnpm; mise only selects the Node/pnpm versions and wraps common commands.
 
+Git hooks are managed by prek and use the same mise-pinned tools:
+
+```bash
+mise exec -- prek install
+```
+
 ```bash
 # Copy the bundle and paste into ChatGPT
 npx -y @steipete/oracle --render --copy -p "Review the TS data layer for schema drift" --file "src/**/*.ts,*/*.test.ts"

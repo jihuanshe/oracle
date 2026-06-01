@@ -1,6 +1,10 @@
 [tools]
 node = "24.16.0"
 pnpm = "10.33.2"
+prek = { version = "0.4.1", backend = "aqua:j178/prek" }
+
+[settings]
+lockfile_platforms = ["macos-arm64", "linux-x64", "windows-x64"]
 
 [tasks.install]
 description = "Install dependencies from pnpm-lock.yaml"

@@ -1,0 +1,88 @@
+# Configuration file for `prek`, a git hook framework written in Rust.
+#:schema https://www.schemastore.org/prek.json
+
+default_install_hook_types = ["pre-commit", "pre-push"]
+default_stages = ["pre-commit", "pre-push"]
+fail_fast = false
+
+# Priority model:
+#   0: fast gate checks.
+#   10-19: mutating fixers, serialized to avoid write conflicts.
+#   20: read-only checks, intentionally parallel.
+
+[[repos]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v6.0.0"
+hooks = [
+  { id = "end-of-file-fixer", name = "fix end of file", stages = [
+    "pre-commit",
+  ], priority = 10 },
+  { id = "trailing-whitespace", name = "fix trailing whitespace", args = [
+    "--markdown-linebreak-ext=md",
+  ], stages = [
+    "pre-commit",
+  ], priority = 11 },
+  { id = "check-yaml", name = "check YAML files", stages = [
+    "pre-commit",
+    "pre-push",
+  ], priority = 20 },
+  { id = "check-merge-conflict", name = "check merge conflict", stages = [
+    "pre-commit",
+    "pre-push",
+  ], priority = 20 },
+  { id = "check-added-large-files", name = "check added large files", args = [
+    "--maxkb=4096",
+  ], stages = [
+    "pre-commit",
+    "pre-push",
+  ], priority = 20 },
+  { id = "detect-private-key", name = "detect private key", stages = [
+    "pre-commit",
+    "pre-push",
+  ], priority = 20 },
+  { id = "check-symlinks", name = "check symlinks", stages = [
+    "pre-commit",
+    "pre-push",
+  ], priority = 20 },
+  { id = "destroyed-symlinks", name = "destroyed symlinks", require_serial = true, stages = [
+    "pre-commit",
+    "pre-push",
+  ], priority = 20 },
+]
+
+[[repos]]
+repo = "https://github.com/sirwart/ripsecrets"
+rev = "v0.1.11"
+hooks = [
+  {
+    id = "ripsecrets",
+    name = "ripsecrets",
+    args = [
+      "--strict-ignore",
+      "--additional-pattern",
+      "sk-proj-[A-Za-z0-9_-]{20,}",
+      "--additional-pattern",
+      "xai-[A-Za-z0-9]{20,}",
+      "--additional-pattern",
+      "fc-[A-Za-z0-9]{20,}",
+    ],
+    exclude = '^(docs/(refactor/ux|debug/remote-chrome)\.md|tests/cli/providerDoctor\.test\.ts)$',
+    require_serial = true,
+    stages = ["pre-commit", "pre-push"],
+    priority = 20,
+  },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "oracle-format-check", name = "oracle format check", entry = "mise exec -- pnpm run format:check", language = "system", pass_filenames = false, stages = [
+    "pre-commit",
+  ], priority = 20 },
+  { id = "oracle-lint", name = "oracle lint", entry = "mise exec -- pnpm run lint", language = "system", pass_filenames = false, stages = [
+    "pre-push",
+  ], priority = 20 },
+  { id = "oracle-packed-cli-smoke", name = "oracle packed CLI smoke", entry = "mise exec -- pnpm run test:packed-cli", language = "system", pass_filenames = false, stages = [
+    "pre-push",
+  ], priority = 20 },
+]

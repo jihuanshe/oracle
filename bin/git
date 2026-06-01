@@ -60,4 +60,3 @@ function isExecutable(candidate: string): boolean {
     return false;
   }
 }
-

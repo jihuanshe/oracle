@@ -2,7 +2,7 @@
 
 > For a guarded, phased flow, run `./scripts/release.sh <phase>` (gates | artifacts | publish | smoke | tag | all); it stops on the first error so you can resume after fixing issues.
 
-The `Release package` GitHub Action builds the signed macOS notifier app, builds the npm tarball from a `vX.Y.Z` tag, uploads `oracle-X.Y.Z.tgz` plus SHA1/SHA256 checksums to the GitHub Release, and keeps `dist/` out of git. Use it for release artifacts instead of committing built output or relying on npm's Git dependency preparation path. Development and CI tool versions are pinned in `.mise.toml`; run `mise install` before local release checks.
+The `Release package` GitHub Action builds the signed macOS notifier app, builds the npm tarball from a `vX.Y.Z` tag, uploads `oracle-X.Y.Z.tgz` plus SHA1/SHA256 checksums to the GitHub Release, and keeps `dist/` out of git. Use it for release artifacts instead of committing built output or relying on npm's Git dependency preparation path. Development and CI tool versions are pinned in `.mise/config.toml`; run `mise install` before local release checks.
 
 1. **Version & metadata**
    - [ ] Update `package.json` version (e.g., `1.0.0`).
